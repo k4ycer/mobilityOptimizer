@@ -43,8 +43,13 @@ namespace mobilityOptimizer
             // CalcTourLength(Tour, dmat, d0, Tour.Length - 1);
         }
 
-        static void Mdmtspv_ga(double[][] xy, int max_salesmen, double[][] depots, int CostType, int min_tour, int pop_size, int num_iter, bool show_prog, bool show_res, double[][] dmat)
-        {
+        static void Mdmtspv_ga(double[][] xy, int max_salesmen, double[][] depots, int CostType, int min_tour, int pop_size, int num_iter, bool show_prog, bool show_res, double[][] dmat){
+
+            ///////////////////////////////////////////
+            //
+            // Initialize
+            //
+            ///////////////////////////////////////////
             // TODO: checar que Epsilon este bien
             double Epsilon = 1*Math.E-10;
 
@@ -70,7 +75,43 @@ namespace mobilityOptimizer
                 pop_rte[i] = randperm(numOfCities);
                 pop_brk[i] = randbreak(max_salesmen, numOfCities, min_tour);
             }
-            
+
+            // Initialize algorithm variables
+            double global_min = double.PositiveInfinity;
+            double[] total_dist = new double[pop_size];
+            double[] dist_history = new double[num_iter];
+            double[][] tmp_pop_rte = new double[8][];
+            double[][] tmp_pop_brk = new double[8][];
+            double[][] new_pop_rte = new double[pop_size][];
+            double[][] new_pop_brk = new double[pop_size][];
+            for(int i = 0; i < 8; i++){
+                tmp_pop_rte[i] = new double[numOfCities];
+                tmp_pop_brk[i] = new double[1];
+            }
+            for(int i = 0; i < pop_size; i++){
+                new_pop_rte[i] = new double[numOfCities];
+                new_pop_brk[i] = new double[1];
+            }
+            int iter = 0;
+            int iter2go = 0;
+        
+
+            ///////////////////////////////////////////
+            //
+            // Run the GA
+            //
+            ///////////////////////////////////////////
+            // while(iter2go < num_iter){
+            //     iter2go = iter2go + 1;
+            //     iter = iter + 1;
+
+            //     // Evaluate each Population Member (Calculate Total Distance)
+            //     for(int i = 0; i < pop_size; i++){
+            //         double[] d = new double[];
+            //         double[] p_rte = new double[]
+            //     }
+            // }
+
             Console.Write("");
         }
 
@@ -159,7 +200,7 @@ namespace mobilityOptimizer
             return breaks;
         }
 
-                ///////////////////////////////////////////
+        ///////////////////////////////////////////
         //
         // Helper functions
         //
