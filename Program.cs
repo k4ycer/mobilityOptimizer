@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Numerics;
+using Accord.Math;
 
 namespace mobilityOptimizer
 {
@@ -38,7 +40,7 @@ namespace mobilityOptimizer
 
             double[] Tour;
 
-            CalcTourLength(Tour, dmat, d0, Tour.Length - 1);
+            // CalcTourLength(Tour, dmat, d0, Tour.Length - 1);
         }
 
         static void Mdmtspv_ga(double[][] xy, int max_salesmen, double[][] depots, int CostType, int min_tour, int pop_size, int num_iter, bool show_prog, bool show_res, double[][] dmat)
@@ -73,22 +75,26 @@ namespace mobilityOptimizer
         }
 
         static double CalcTourLength(double[] Tour, double[][] dmat, double[][] d0, int indeces) {
-            double VehicleTourLength = d0[Tour[1], Tour[2]];
+            double VehicleTourLength = d0[(int)Tour[1]][(int)Tour[2]];
 
             for (int c = 2; c <= indeces-1; c++)
             {
-                VehicleTourLength = VehicleTourLength + dmat[Tour[c+1]][Tour[c]];
+                VehicleTourLength = VehicleTourLength + dmat[(int)Tour[c+1]][(int)Tour[c]];
             }
 
-            VehicleTourLength = VehicleTourLength + d0[Tour[indices+1]][Tour[indeces]];
+            VehicleTourLength = VehicleTourLength + d0[(int)Tour[indeces+1]][(int)Tour[indeces]];
 
             return VehicleTourLength;
         }
 
         static double[][] CalcRange(double[] p_brk, int n, bool flag) {
-            double[][] rng = new double[p_brk.Length, 2];
-            
             int i;
+            double[][] rng = new double[p_brk.Length][];
+            
+            for (i = 0; i < p_brk.Length; i++)
+            {
+                rng[i] = new double[2];
+            }
 
             for (i = 0; i < p_brk.Length; i++)
             {
@@ -152,9 +158,8 @@ namespace mobilityOptimizer
 
             return breaks;
         }
-    }
 
-        ///////////////////////////////////////////
+                ///////////////////////////////////////////
         //
         // Helper functions
         //
@@ -189,4 +194,5 @@ namespace mobilityOptimizer
             }
             return array;
         }
+    }
 }
