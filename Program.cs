@@ -72,17 +72,6 @@ namespace mobilityOptimizer
                 pop_brk[i] = randbreak(max_salesmen, numOfCities, min_tour);
             }
 
-            // epicLevi: Currently Testing
-            // Console.WriteLine("pop_brk[i] (pop_brk{k}): ");
-            // for (int i = 0; i < pop_brk.Length; i++)
-            // {
-            //     for (int j = 0; j < pop_brk[0].Length; j++)
-            //     {
-            //         Console.Write(" {0} ", pop_brk[i][j]);
-            //     }
-            //     Console.WriteLine();
-            // }
-
             // Initialize algorithm variables
             double global_min = double.PositiveInfinity;
             double[] total_dist = new double[pop_size];
