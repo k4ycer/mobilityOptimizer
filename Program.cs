@@ -1,10 +1,12 @@
 ﻿using System;
+using System.IO;
 using System.Numerics;
+using System.Runtime.Serialization.Formatters.Binary;
 using Accord.Math;
 
 namespace mobilityOptimizer
 {
-    class Program
+    public static class Program
     {
         static void Main(string[] args)
         {
@@ -89,6 +91,7 @@ namespace mobilityOptimizer
             double[][] tmp_pop_brk = new double[8][];
             double[][] new_pop_rte = new double[pop_size][];
             double[][] new_pop_brk = new double[pop_size][];
+            double[][] rng = new double[max_salesmen][];
             for(int i = 0; i < 8; i++){
                 tmp_pop_rte[i] = new double[numOfCities];
                 tmp_pop_brk[i] = new double[1];
@@ -99,6 +102,8 @@ namespace mobilityOptimizer
             }
             int iter = 0;
             int iter2go = 0;
+            double[] opt_rte = new double[numOfCities];
+            double[] opt_brk = new double[max_salesmen];
         
 
             ///////////////////////////////////////////
@@ -109,13 +114,15 @@ namespace mobilityOptimizer
             while(iter2go < num_iter){
                 iter2go = iter2go + 1;
                 iter = iter + 1;
+                double[] p_brk = new double[max_salesmen];
+                double[] p_rte;
 
                 // Evaluate each Population Member (Calculate Total Distance)
                 for(int i = 0; i < pop_size; i++){
-                    double[] p_rte = pop_rte[i];
-                    double[] p_brk = pop_brk[i];
+                    p_rte = pop_rte[i];
+                    p_brk = pop_brk[i];
                     int salesmen = p_brk.Length + 1;
-                    double[][] rng = CalcRange(p_brk, numOfCities, true);
+                    rng = CalcRange(p_brk, numOfCities, true);
 
                     double[] d = new double[salesmen];
                     double[] Tour;
@@ -147,7 +154,157 @@ namespace mobilityOptimizer
                         }
                     }
                 }
+
+                // Find the Best Route in the Population
+                int index;
+                double min_dist = total_dist.Min(out index);                
+                dist_history[iter] = min_dist;
+                if(min_dist < global_min){
+                    iter2go = 0;
+                    int generation = iter;
+                    global_min = min_dist;
+                    opt_rte = pop_rte[index];
+                    opt_brk = pop_brk[index];
+                    int salesmen = p_brk.Length + 1;
+                    rng = CalcRange(p_brk, numOfCities, true);
+                    if(show_prog){
+                        // TODO OPT Plot the best route
+                    }
+                }
+
+                // Genetic Algorithm Operators
+                double[] rand_grouping = randperm(pop_size);
+                int ops = 16;
+                for(int p = ops; p < pop_size; p = p + ops){
+                    // Populate rtes, brks and dists
+                    double[] sub_rand_grouping = SubArrayDeepClone(rand_grouping, p-ops+1, p);
+                    double[][] rtes = new double[sub_rand_grouping.Length][];
+                    double[][] brks = new double[sub_rand_grouping.Length][];
+                    double[] dists = new double[sub_rand_grouping.Length];
+                    for(int i = 0; i < sub_rand_grouping.Length; i++){
+                        rtes[i] = pop_rte[(int)sub_rand_grouping[i]];
+                        brks[i] = pop_brk[(int)sub_rand_grouping[i]];
+                        dists[i] = total_dist[(int)sub_rand_grouping[i]];
+                    }
+
+                    int idx;
+                    double ignore = dists.Min(out idx);
+                    double[] best_of_8_rte = rtes[idx];
+                    double[] best_of_8_brk = brks[idx];
+                    double[] rte_ins_pts = new double[2];
+                    Random random = new Random();  
+                    rte_ins_pts[0] = Math.Ceiling(numOfCities * random.NextDouble());
+                    rte_ins_pts[1] = Math.Ceiling(numOfCities * random.NextDouble());
+                    Array.Sort(rte_ins_pts);
+                    double I = rte_ins_pts[0];
+                    double J = rte_ins_pts[1];
+
+                    // Generate new solutions
+                    for(int k = 0; k < ops; k++){
+                        tmp_pop_rte[k] = best_of_8_rte;
+                        tmp_pop_brk[k] = best_of_8_brk;
+                        switch(k){                            
+                            case 1: // Flip
+                                fliplr(tmp_pop_rte, k, I, J);
+                                break;
+                            case 2: // Swap
+                                swap(tmp_pop_rte, k, I, J);
+                                break;
+                            case 3: // Slide
+                                slide(tmp_pop_rte, k, I, J);
+                                break;
+                            case 4: // Change Breaks
+                                tmp_pop_brk[k] = randbreak(max_salesmen, numOfCities, min_tour);
+                                break;
+                            case 5: // Flip, Change Breaks
+                                fliplr(tmp_pop_rte, k, I, J);
+                                tmp_pop_brk[k] = randbreak(max_salesmen, numOfCities, min_tour);
+                                break;
+                            case 6: // Swap, Change Breaks
+                                swap(tmp_pop_rte, k, I, J);
+                                tmp_pop_brk[k] = randbreak(max_salesmen, numOfCities, min_tour);
+                                break;
+                            case 7: // Slide, Change Breaks
+                                slide(tmp_pop_rte, k, I, J);
+                                tmp_pop_brk[k] = randbreak(max_salesmen, numOfCities, min_tour);
+                                break;
+                            case 8:
+                                int l = random.Next((int)Math.Min(numOfCities-J-1, Math.Floor(Math.Sqrt(numOfCities))));
+                                double[] temp1 = SubArrayDeepClone(tmp_pop_rte[k], (int)I, (int)I+(int)l);
+                                double[] temp2 = SubArrayDeepClone(tmp_pop_rte[k], (int)J, (int)+(int)l);
+                                for(int i = (int)I, j = 0; i < I+l; i++, j++){
+                                    tmp_pop_rte[k][i] = temp2[j];
+                                    tmp_pop_rte[k][i] = temp1[j];
+                                }
+                                break;
+                            case 11: // Remove tasks from agent and add at the end
+                                //  TODO checar falla
+                                l = random.Next(max_salesmen-1);
+                                double[] temp = new double[tmp_pop_brk[k].Length]; 
+                                double[] part1 = SubArrayDeepClone(tmp_pop_brk[k], 0, l-1);
+                                double[] part2 = SubArrayDeepClone(tmp_pop_brk[k], l, tmp_pop_brk[k].Length - l);
+                                part1.CopyTo(temp, 0);
+                                part2.CopyTo(temp, part1.Length + 1);
+                                temp[temp.Length - 1] = numOfCities;
+                                tmp_pop_brk[k] = temp;
+                                break;
+                            case 12: // Remove tasks from agent and add at the beginning
+                                l = random.Next(max_salesmen-1);
+                                temp = new double[tmp_pop_brk[k].Length]; 
+                                // TODO: Checar que si sea 0 y no 1
+                                temp[0] = 0;                                
+                                part1 = SubArrayDeepClone(tmp_pop_brk[k], 0, l-1);
+                                part2 = SubArrayDeepClone(tmp_pop_brk[k], l, tmp_pop_brk[k].Length - l);
+                                part1.CopyTo(temp, 1);
+                                part2.CopyTo(temp, part1.Length + 1);
+                                tmp_pop_brk[k] = temp;
+                                break;
+                            default: // swap close points
+                                if(I < numOfCities){
+                                    swapClosePoints(tmp_pop_rte, k, I);
+                                }
+                                break;
+                        }
+                    }
+                    for(int i = p-ops+1, j = 0; i <= p; i++, j++){
+                        new_pop_rte[i] = tmp_pop_rte[j];
+                        new_pop_brk[i] = tmp_pop_brk[j];
+                    }
+                }
+                pop_rte = new_pop_rte;
+                pop_brk = new_pop_brk;
             }
+
+            ///////////////////////////////////////////
+            //
+            // Return Outpus
+            //
+            ///////////////////////////////////////////
+            double[][] best_tour = new double[max_salesmen][];
+            for(int i = 0; i < max_salesmen; i++){
+                if(rng[i][1] <= rng[i][2]){
+                    double rngStart, rngEnd, diffRng;
+                    rngStart = rng[i][1];
+                    rngEnd = rng[i][2];
+                    diffRng = (int)rngEnd - (int)rngStart;
+                    double[] rngNumbers = new double[(int)diffRng + 1];
+                    for(int j = (int)rngStart, y = 0; j <= rngEnd; j++, y++){
+                        rngNumbers[y] = j;
+                    }
+                    double[] sub_opt_rte = new double[rngNumbers.Length];
+                    for(int j = 0; j < rngNumbers.Length; j++){
+                        sub_opt_rte[j] = opt_rte[(int)rngNumbers[j]];
+                    }
+                    double[] temp = new double[sub_opt_rte.Length + 2];
+                    temp[0] = i;
+                    sub_opt_rte.CopyTo(temp, 1);
+                    temp[temp.Length - 1] = i;
+
+                    best_tour[i] = temp;
+                }else{          
+                    best_tour[i] = new double[2]{i, i};
+                }
+            }                        
         }
 
         static double CalcTourLength(double[] Tour, double[][] dmat, double[][] d0, int indeces) {            
@@ -253,12 +410,12 @@ namespace mobilityOptimizer
         // Returns a vector permutation
         static double[] randperm(int num){
             double[] array = new double[num];
-            Random random = new Random();
-            int n = array.Length;
+            Random random = new Random();            
             for(int j = 0; j < num; j++){
                 array[j] = j;
             }
             int i;
+            int n = array.Length;
             double temp;
             while(n > 1){
                 n--;
@@ -270,6 +427,56 @@ namespace mobilityOptimizer
             return array;
         }
 
+        // Gets a subpart of an array
+        static T[] SubArrayDeepClone<T>(this T[] data, int index, int length)
+        {
+            T[] arrCopy = new T[length];
+            Array.Copy(data, index, arrCopy, 0, length);
+            using (MemoryStream ms = new MemoryStream())
+            {
+                var bf = new BinaryFormatter();
+                bf.Serialize(ms, arrCopy);
+                ms.Position = 0;
+                return (T[])bf.Deserialize(ms);
+            }
+        }
+
+        // Flips matrix elements
+        static void fliplr(double[][] data, int k, double I, double J){
+            int i = (int)I, j = (int)J;
+            while(i < j){
+                double temp = data[k][j];
+                data[k][j] = data[k][i];
+                data[k][i] = temp;
+                i++;
+                j--;
+            }
+        }
+
+        // Swaps matrix elements
+        static void swap(double[][] data, int k, double I, double J){
+            int i = (int)I, j = (int)J;
+            double temp = data[k][j];
+            data[k][j] = data[k][i];
+            data[k][i] = temp;
+        }
+
+        // Slides matrix elements
+        static void slide(double[][] data, int k, double I, double J){
+            int i = (int)I, j = (int)J;
+            double tempFinal = data[k][i];
+            for(i = i; i < j; i++){
+                data[k][i] = data[k][i+1];
+            }
+             data[k][i] = tempFinal;
+        }
+
+        // Swap close points
+        static void swapClosePoints(double[][] data, int k, double I){
+            double tempSwap = data[k][(int)I];
+            data[k][(int)I] = data[k][(int)I + 1];
+            data[k][(int)I + 1] = tempSwap;
+        }
         static bool isDuplicate(double n, double[] arr) {
             foreach (double item in arr)
             {
