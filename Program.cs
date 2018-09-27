@@ -38,15 +38,10 @@ namespace mobilityOptimizer
                 new double[]{2.4637, 2.6566, 7.5648, 6.9137, 0}
             };
 
-            // Mdmtspv_ga(xy, max_salesmen, depots, CostType, min_tour, pop_size, num_iter, show_prog, show_res, dmat);
-
-            double[] Tour;
-
-            // CalcTourLength(Tour, dmat, d0, Tour.Length - 1);
+            Mdmtspv_ga(xy, max_salesmen, depots, CostType, min_tour, pop_size, num_iter, show_prog, show_res, dmat);
         }
 
         static void Mdmtspv_ga(double[][] xy, int max_salesmen, double[][] depots, int CostType, int min_tour, int pop_size, int num_iter, bool show_prog, bool show_res, double[][] dmat){
-
             ///////////////////////////////////////////
             //
             // Initialize
@@ -66,7 +61,6 @@ namespace mobilityOptimizer
                 for(int j = 0; j < numOfCities; j++){
                     double[] restaFila = substractVectors(depots[i], xy[j]);
                     D0[i][j] = Accord.Math.Norm.Euclidean(restaFila); 
-                    Console.Write(D0[i][j] + " ");
                 }
             }
             
@@ -77,6 +71,17 @@ namespace mobilityOptimizer
                 pop_rte[i] = randperm(numOfCities);
                 pop_brk[i] = randbreak(max_salesmen, numOfCities, min_tour);
             }
+
+            // epicLevi: Currently Testing
+            // Console.WriteLine("pop_brk[i] (pop_brk{k}): ");
+            // for (int i = 0; i < pop_brk.Length; i++)
+            // {
+            //     for (int j = 0; j < pop_brk[0].Length; j++)
+            //     {
+            //         Console.Write(" {0} ", pop_brk[i][j]);
+            //     }
+            //     Console.WriteLine();
+            // }
 
             // Initialize algorithm variables
             double global_min = double.PositiveInfinity;
@@ -109,10 +114,42 @@ namespace mobilityOptimizer
                 iter = iter + 1;
 
                 // Evaluate each Population Member (Calculate Total Distance)
-                // for(int i = 0; i < pop_size; i++){
-                //     double[] d = new double[];
-                //     double[] p_rte = new double[]
-                // }
+                for(int i = 0; i < pop_size; i++){
+                    double[] p_rte = pop_rte[i];
+                    double[] p_brk = pop_brk[i];
+                    int salesmen = p_brk.Length + 1;
+                    double[][] rng = CalcRange(p_brk, numOfCities, true);
+
+                    double[] d = new double[salesmen];
+                    double[] Tour;
+
+                    for (int j = 0; j < salesmen; j++)
+                    {
+                        if (j < rng.Length && rng[j][0] <= rng[j][1]) {
+                            int rte_start   = (int)rng[j][0] - 1;
+                            int rte_end     = (int)rng[j][1] - 1;
+                            int rte_length  = rte_end - rte_start + 1;
+                            double[] midTour = new double[rte_length];
+
+                            for (int k = 0; k < midTour.Length; k++)
+                            {
+                                midTour[k] = p_rte[k + rte_start];
+                            }
+
+                            Tour    = new double[midTour.Length + 2];
+                            Tour[0] = j;
+                            Tour[Tour.Length - 1] = j;
+
+                            for (int k = 1; k < Tour.Length - 1; k++)
+                            {
+                                Tour[k] = midTour[k - 1];
+                            }
+                        } else {
+                            Tour = new double[] {Convert.ToDouble(j), Convert.ToDouble(j)};
+                            d[j] = 0;
+                        }
+                    }
+                }
 
                 // Find the Best Route in the Population
                 int index;
@@ -263,20 +300,24 @@ namespace mobilityOptimizer
                 }else{          
                     best_tour[i] = new double[2]{i, i};
                 }
-            }
-
-            Console.Write("");
+            }                        
         }
 
-        static double CalcTourLength(double[] Tour, double[][] dmat, double[][] d0, int indeces) {
-            double VehicleTourLength = d0[(int)Tour[1]][(int)Tour[2]];
+        static double CalcTourLength(double[] Tour, double[][] dmat, double[][] d0, int indeces) {            
+            double VehicleTourLength = d0[(int)Tour[0]][(int)Tour[1]];
 
             for (int c = 2; c <= indeces-1; c++)
             {
                 VehicleTourLength = VehicleTourLength + dmat[(int)Tour[c+1]][(int)Tour[c]];
             }
 
-            VehicleTourLength = VehicleTourLength + d0[(int)Tour[indeces+1]][(int)Tour[indeces]];
+            // Console.WriteLine("d0.Length: {0}, Tour[indeces]: {1}", d0.Length, Tour[indeces]);
+            // Console.WriteLine("d0[0].Length: {0}, Tour[indeces-1]: {1}", d0[0].Length, Tour[indeces-1]);
+
+            // Console.WriteLine("d0[(int)Tour[indeces]]", d0[(int)Tour[indeces]]);
+            // Console.WriteLine("d0[(int)Tour[indeces]][(int)Tour[indeces-1]]: ", d0[(int)Tour[indeces]][(int)Tour[indeces-1]]);
+
+            VehicleTourLength = VehicleTourLength + d0[(int)Tour[indeces]][(int)Tour[indeces-1]];
 
             return VehicleTourLength;
         }
@@ -300,10 +341,10 @@ namespace mobilityOptimizer
                 } else if (flag) {
                     rng[i][0] = 1;
                     rng[i][1] = 0;
-                } else if (p_brk[i] <= p_brk[i - 1]) {
+                } else if (i >= 1 && p_brk[i] <= p_brk[i - 1]) {
                     rng[i][0] = p_brk[i-1];
                     rng[i][1] = p_brk[i];
-                } else if (i < p_brk.Length) {
+                } else if (i >= 1 && i < p_brk.Length) {
                     rng[i][0] = p_brk[i-1] + 1;
                     rng[i][1] = p_brk[i];
                 } else {
@@ -313,36 +354,29 @@ namespace mobilityOptimizer
             }
 
             if (p_brk[p_brk.Length - 1] < n && p_brk[p_brk.Length - 1] != 1) {
-                rng[i + 1][0] = p_brk[p_brk.Length - 1] + 1;
-                rng[i + 1][1] = n;
+                rng[i - 1][0] = p_brk[p_brk.Length - 1] + 1;
+                rng[i - 1][1] = n;
             } else if (p_brk[p_brk.Length - 1] < n && p_brk[p_brk.Length - 1] == 1) {
-                rng[i + 1][0] = p_brk[p_brk.Length - 1];
-                rng[i + 1][1] = n;
+                rng[i - 1][0] = p_brk[p_brk.Length - 1];
+                rng[i - 1][1] = n;
             } else {
-                rng[i + 1][0] = p_brk[p_brk.Length-1];
-                rng[i + 1][1] = n - 1;
+                rng[i - 1][0] = p_brk[p_brk.Length-1];
+                rng[i - 1][1] = n - 1;
             }
 
             return rng;
         }
 
         static double[] randbreak(int max_salesmen, int n, int min_tour) {
-            double[] breaks;
-
-            int     num_brks = max_salesmen - 1;
-            breaks = new double[num_brks];
+            int     num_brks = max_salesmen;
+            double[] breaks = new double[num_brks];
 
             for (int i = 0; i < num_brks; i++)
             {
                 double newRand = new Random().Next(1, n);
 
-                foreach (double item in breaks)
-                {
-                    if (item == newRand) 
-                    {
-                        i--;
-                        continue;
-                    }
+                while (isDuplicate(newRand, breaks)) {
+                    newRand = new Random().Next(1, n);
                 }
 
                 breaks[i] = newRand;
@@ -438,6 +472,15 @@ namespace mobilityOptimizer
             double tempSwap = data[k][(int)I];
             data[k][(int)I] = data[k][(int)I + 1];
             data[k][(int)I + 1] = tempSwap;
+        }
+        static bool isDuplicate(double n, double[] arr) {
+            foreach (double item in arr)
+            {
+                if (item == n)
+                    return true;
+            }
+
+            return false;
         }
     }
 }
