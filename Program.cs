@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -190,8 +191,8 @@ namespace mobilityOptimizer
 
                     // Generate new solutions
                     for(int k = 0; k < ops; k++){
-                        tmp_pop_rte[k] = best_of_8_rte;
-                        tmp_pop_brk[k] = best_of_8_brk;
+                        tmp_pop_rte[k] = (double[])best_of_8_rte.Clone();
+                        tmp_pop_brk[k] = (double[])best_of_8_brk.Clone();
                         switch(k){                            
                             case 1: // Flip
                                 fliplr(tmp_pop_rte, k, I, J);
@@ -366,11 +367,7 @@ namespace mobilityOptimizer
 
             for (int i = 0; i < num_brks; i++)
             {
-                double newRand = new Random().Next(1, n);
-
-                while (isDuplicate(newRand, breaks)) {
-                    newRand = new Random().Next(1, n);
-                }
+                double newRand = new Random().Next(1, n+1);
 
                 breaks[i] = newRand;
             }
@@ -465,15 +462,6 @@ namespace mobilityOptimizer
             double tempSwap = data[k][(int)I];
             data[k][(int)I] = data[k][(int)I + 1];
             data[k][(int)I + 1] = tempSwap;
-        }
-        static bool isDuplicate(double n, double[] arr) {
-            foreach (double item in arr)
-            {
-                if (item == n)
-                    return true;
-            }
-
-            return false;
         }
     }
 }
