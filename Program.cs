@@ -91,7 +91,7 @@ namespace mobilityOptimizer
             double[][] tmp_pop_brk = new double[8][];
             double[][] new_pop_rte = new double[pop_size][];
             double[][] new_pop_brk = new double[pop_size][];
-            double[][] rng;
+            double[][] rng = new double[max_salesmen][];
             for(int i = 0; i < 8; i++){
                 tmp_pop_rte[i] = new double[numOfCities];
                 tmp_pop_brk[i] = new double[1];
@@ -102,6 +102,8 @@ namespace mobilityOptimizer
             }
             int iter = 0;
             int iter2go = 0;
+            double[] opt_rte = new double[numOfCities];
+            double[] opt_brk = new double[max_salesmen];
         
 
             ///////////////////////////////////////////
@@ -112,13 +114,15 @@ namespace mobilityOptimizer
             while(iter2go < num_iter){
                 iter2go = iter2go + 1;
                 iter = iter + 1;
+                double[] p_brk = new double[max_salesmen];
+                double[] p_rte;
 
                 // Evaluate each Population Member (Calculate Total Distance)
                 for(int i = 0; i < pop_size; i++){
-                    double[] p_rte = pop_rte[i];
-                    double[] p_brk = pop_brk[i];
+                    p_rte = pop_rte[i];
+                    p_brk = pop_brk[i];
                     int salesmen = p_brk.Length + 1;
-                    double[][] rng = CalcRange(p_brk, numOfCities, true);
+                    rng = CalcRange(p_brk, numOfCities, true);
 
                     double[] d = new double[salesmen];
                     double[] Tour;
@@ -153,16 +157,16 @@ namespace mobilityOptimizer
 
                 // Find the Best Route in the Population
                 int index;
-                double min_dist = total_dist.Min(out index);
+                double min_dist = total_dist.Min(out index);                
                 dist_history[iter] = min_dist;
                 if(min_dist < global_min){
                     iter2go = 0;
                     int generation = iter;
                     global_min = min_dist;
-                    double[] opt_rte = pop_rte[index];
-                    double[] opt_brk = pop_brk[index];
+                    opt_rte = pop_rte[index];
+                    opt_brk = pop_brk[index];
                     int salesmen = p_brk.Length + 1;
-                    rng = CalcRange(p_brk, numOfCities);
+                    rng = CalcRange(p_brk, numOfCities, true);
                     if(show_prog){
                         // TODO OPT Plot the best route
                     }
@@ -289,7 +293,7 @@ namespace mobilityOptimizer
                     }
                     double[] sub_opt_rte = new double[rngNumbers.Length];
                     for(int j = 0; j < rngNumbers.Length; j++){
-                        sub_opt_rte = opt_rte[rngNumbers[j]];
+                        sub_opt_rte[j] = opt_rte[(int)rngNumbers[j]];
                     }
                     double[] temp = new double[sub_opt_rte.Length + 2];
                     temp[0] = i;
