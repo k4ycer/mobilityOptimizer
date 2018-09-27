@@ -378,11 +378,7 @@ namespace mobilityOptimizer
 
             for (int i = 0; i < num_brks; i++)
             {
-                double newRand = new Random().Next(1, n);
-
-                while (isDuplicate(newRand, breaks)) {
-                    newRand = new Random().Next(1, n);
-                }
+                double newRand = new Random().Next(1, n+1);
 
                 breaks[i] = newRand;
             }
@@ -477,15 +473,6 @@ namespace mobilityOptimizer
             double tempSwap = data[k][(int)I];
             data[k][(int)I] = data[k][(int)I + 1];
             data[k][(int)I + 1] = tempSwap;
-        }
-        static bool isDuplicate(double n, double[] arr) {
-            foreach (double item in arr)
-            {
-                if (item == n)
-                    return true;
-            }
-
-            return false;
         }
     }
 }
