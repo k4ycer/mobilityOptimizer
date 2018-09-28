@@ -77,8 +77,8 @@ namespace mobilityOptimizer
             double global_min = double.PositiveInfinity;
             double[] total_dist = new double[pop_size];
             double[] dist_history = new double[num_iter];
-            double[][] tmp_pop_rte = new double[8][];
-            double[][] tmp_pop_brk = new double[8][];
+            double[][] tmp_pop_rte = new double[16][];
+            double[][] tmp_pop_brk = new double[16][];
             double[][] new_pop_rte = new double[pop_size][];
             double[][] new_pop_brk = new double[pop_size][];
             double[][] rng = new double[max_salesmen][];
@@ -166,16 +166,26 @@ namespace mobilityOptimizer
                 double[] rand_grouping = randperm(pop_size);
                 int ops = 16;
                 for(int p = ops; p < pop_size; p = p + ops){
-                    // Populate rtes, brks and dists
-                    double[] sub_rand_grouping = SubArrayDeepClone(rand_grouping, p-ops+1, p);
-                    double[][] rtes = new double[sub_rand_grouping.Length][];
-                    double[][] brks = new double[sub_rand_grouping.Length][];
-                    double[] dists = new double[sub_rand_grouping.Length];
-                    for(int i = 0; i < sub_rand_grouping.Length; i++){
-                        rtes[i] = pop_rte[(int)sub_rand_grouping[i]];
-                        brks[i] = pop_brk[(int)sub_rand_grouping[i]];
-                        dists[i] = total_dist[(int)sub_rand_grouping[i]];
-                    }
+                    // Populate rtes
+                    double[] diff_p_numbers = getSequentialNumbers(p-ops+1, p);
+                    double[] sub_rand_grouping = getSubArrayWithSequence(rand_grouping, diff_p_numbers);
+                    double[][] rtes = getSubMatrixWithSequence(pop_rte, sub_rand_grouping);
+
+                    // Populate brks
+                    double[][] brks = getSubMatrixWithSequence(pop_brk, sub_rand_grouping);
+
+                    // Populate dists
+                    double[] dists = getSubArrayWithSequence(total_dist, sub_rand_grouping);
+
+                    // double[] sub_rand_grouping = SubArrayDeepClone(rand_grouping, p-ops+1, p);
+                    // double[][] rtes = new double[sub_rand_grouping.Length][];
+                    // double[][] brks = new double[sub_rand_grouping.Length][];
+                    // double[] dists = new double[sub_rand_grouping.Length];
+                    // for(int i = 0; i < sub_rand_grouping.Length; i++){
+                    //     rtes[i] = pop_rte[(int)sub_rand_grouping[i]];
+                    //     brks[i] = pop_brk[(int)sub_rand_grouping[i]];
+                    //     dists[i] = total_dist[(int)sub_rand_grouping[i]];
+                    // }
 
                     int idx;
                     double ignore = dists.Min(out idx);
@@ -183,8 +193,8 @@ namespace mobilityOptimizer
                     double[] best_of_8_brk = brks[idx];
                     double[] rte_ins_pts = new double[2];
                     Random random = new Random();  
-                    rte_ins_pts[0] = Math.Ceiling(numOfCities * random.NextDouble());
-                    rte_ins_pts[1] = Math.Ceiling(numOfCities * random.NextDouble());
+                    rte_ins_pts[0] = Math.Ceiling((numOfCities - 1) * random.NextDouble());
+                    rte_ins_pts[1] = Math.Ceiling((numOfCities - 1) * random.NextDouble());
                     Array.Sort(rte_ins_pts);
                     double I = rte_ins_pts[0];
                     double J = rte_ins_pts[1];
@@ -220,33 +230,53 @@ namespace mobilityOptimizer
                                 break;
                             case 8:
                                 int l = random.Next((int)Math.Min(numOfCities-J-1, Math.Floor(Math.Sqrt(numOfCities))));
-                                double[] temp1 = SubArrayDeepClone(tmp_pop_rte[k], (int)I, (int)I+(int)l);
-                                double[] temp2 = SubArrayDeepClone(tmp_pop_rte[k], (int)J, (int)+(int)l);
-                                for(int i = (int)I, j = 0; i < I+l; i++, j++){
+                                double diffIl = ((I+l) - I) + 1;
+                                double diffJl = ((J+l) - J) + 1;
+                                double[] diffIlNums = new double[(int)diffIl];
+                                double[] diffJlNums = new double[(int)diffJl];
+                                for(int i = (int)I, j = 0; i <= I+l; i++, j++){
+                                    diffIlNums[j] = i;
+                                }
+                                for(int i = (int)J, j = 0; i <= J+l; i++, j++){
+                                    diffJlNums[j] = i;
+                                }
+                                double[] sub_tmp_pop_rteIl = new double[(int)diffIlNums.Length];
+                                double[] sub_tmp_pop_rteJl = new double[(int)diffJlNums.Length];
+                                for(int i = 0; i < diffIlNums.Length; i++){
+                                    sub_tmp_pop_rteIl[i] = tmp_pop_rte[k][(int)diffIlNums[i]];
+                                }
+                                for(int i = 0; i < diffJlNums.Length; i++){
+                                    sub_tmp_pop_rteJl[i] = tmp_pop_rte[k][(int)diffJlNums[i]];
+                                }
+                                double[] temp1 = sub_tmp_pop_rteIl;
+                                double[] temp2 = sub_tmp_pop_rteJl;
+
+                                for(int i = (int)I, j = 0; i <= I+l; i++, j++){
                                     tmp_pop_rte[k][i] = temp2[j];
                                     tmp_pop_rte[k][i] = temp1[j];
                                 }
                                 break;
                             case 11: // Remove tasks from agent and add at the end
                                 //  TODO checar falla
-                                l = random.Next(max_salesmen-1);
+                                l = random.Next(1, max_salesmen-1);
                                 double[] temp = new double[tmp_pop_brk[k].Length]; 
+                                // Aseguramos que l sea positivo
                                 double[] part1 = SubArrayDeepClone(tmp_pop_brk[k], 0, l-1);
                                 double[] part2 = SubArrayDeepClone(tmp_pop_brk[k], l, tmp_pop_brk[k].Length - l);
                                 part1.CopyTo(temp, 0);
-                                part2.CopyTo(temp, part1.Length + 1);
+                                part2.CopyTo(temp, part1.Length);
                                 temp[temp.Length - 1] = numOfCities;
                                 tmp_pop_brk[k] = temp;
                                 break;
                             case 12: // Remove tasks from agent and add at the beginning
-                                l = random.Next(max_salesmen-1);
+                                l = random.Next(1, max_salesmen-1);
                                 temp = new double[tmp_pop_brk[k].Length]; 
                                 // TODO: Checar que si sea 0 y no 1
                                 temp[0] = 0;                                
                                 part1 = SubArrayDeepClone(tmp_pop_brk[k], 0, l-1);
                                 part2 = SubArrayDeepClone(tmp_pop_brk[k], l, tmp_pop_brk[k].Length - l);
                                 part1.CopyTo(temp, 1);
-                                part2.CopyTo(temp, part1.Length + 1);
+                                part2.CopyTo(temp, part1.Length);
                                 tmp_pop_brk[k] = temp;
                                 break;
                             default: // swap close points
@@ -459,9 +489,47 @@ namespace mobilityOptimizer
 
         // Swap close points
         static void swapClosePoints(double[][] data, int k, double I){
+            // If it's last element then swap with third
+            if(I == data[k].Length - 1){
+                I--;
+            }
             double tempSwap = data[k][(int)I];
             data[k][(int)I] = data[k][(int)I + 1];
             data[k][(int)I + 1] = tempSwap;
+        }
+
+        static double[] getSequentialNumbers(int start, int end){
+            double[] numbers;
+            int numDiff;
+
+            // +1 because it's inclusive
+            numDiff = end - start + 1;            
+            numbers = new double[numDiff];
+            for(int i = start, j = 0; i <= end; i++, j++){
+                numbers[j] = i;
+            }
+
+            return numbers;
+        }
+
+        static double[] getSubArrayWithSequence(double[] data, double[] sequence){
+            double[] subArray = new double[sequence.Length];
+
+            for(int i = 0; i < sequence.Length; i++){
+                subArray[i] = data[(int)sequence[i]];
+            }
+
+            return subArray;
+        }
+
+        static double[][] getSubMatrixWithSequence(double[][] data, double[] sequence){
+            double[][] subMatrix = new double[sequence.Length][];
+
+            for(int i = 0; i < sequence.Length; i++){
+                subMatrix[i] = data[(int)sequence[i]];
+            }
+
+            return subMatrix;
         }
     }
 }
