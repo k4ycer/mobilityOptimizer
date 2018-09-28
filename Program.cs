@@ -94,6 +94,8 @@ namespace mobilityOptimizer
             int iter2go = 0;
             double[] opt_rte = new double[numOfCities];
             double[] opt_brk = new double[max_salesmen];
+            double[] p_brk = new double[max_salesmen];
+            double[] p_rte;
         
 
             ///////////////////////////////////////////
@@ -105,9 +107,7 @@ namespace mobilityOptimizer
                 Console.WriteLine("iter2go: " + iter2go);
                 Console.WriteLine("num_iter: " + num_iter);
                 iter2go = iter2go + 1;
-                iter = iter + 1;
-                double[] p_brk = new double[max_salesmen];
-                double[] p_rte;
+                iter = iter + 1;                
 
                 // Evaluate each Population Member (Calculate Total Distance)
                 for(int i = 0; i < pop_size; i++){
@@ -189,9 +189,9 @@ namespace mobilityOptimizer
                 // Genetic Algorithm Operators
                 double[] rand_grouping = randperm(pop_size);
                 int ops = 16;
-                for(int p = ops; p < pop_size; p = p + ops){
+                for(int p = ops; p <= pop_size; p = p + ops){
                     // Populate rtes
-                    double[] diff_p_numbers = getSequentialNumbers(p-ops+1, p);
+                    double[] diff_p_numbers = getSequentialNumbers(p-ops+1, p-1);
                     double[] sub_rand_grouping = getSubArrayWithSequence(rand_grouping, diff_p_numbers);
                     double[][] rtes = getSubMatrixWithSequence(pop_rte, sub_rand_grouping);
 
@@ -314,7 +314,7 @@ namespace mobilityOptimizer
                                 break;
                         }
                     }
-                    for(int i = p-ops+1, j = 0; i <= p; i++, j++){
+                    for(int i = p-ops, j = 0; i < p; i++, j++){
                         new_pop_rte[i] = tmp_pop_rte[j];
                         new_pop_brk[i] = tmp_pop_brk[j];
                     }
@@ -375,6 +375,9 @@ namespace mobilityOptimizer
         }
 
         static double[][] CalcRange(double[] p_brk, int n, bool flag) {
+            if(p_brk.Length < 3){
+                throw new Exception("p_brk");
+            }
             int i;
 
             double[][] rng = new double[p_brk.Length + 1][];
@@ -434,7 +437,9 @@ namespace mobilityOptimizer
             }
 
             Array.Sort(breaks);
-
+            if(breaks.Length < 3){
+                throw new Exception("breaks");
+            }
             return breaks;
         }
 
