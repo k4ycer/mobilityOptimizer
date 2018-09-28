@@ -71,6 +71,14 @@ namespace mobilityOptimizer
             for(int i = 0; i < pop_size; i++){
                 pop_rte[i] = randperm(numOfCities);
                 pop_brk[i] = randbreak(max_salesmen, numOfCities, min_tour);
+
+                // DEBUG Testing for randbreak()
+                // Console.WriteLine("\n >>>>> pop_brk[i]:");
+                // for (int j = 0; j < pop_brk[0].Length; j++)
+                // {
+                //     Console.Write(" {0} \n", pop_brk[i][j]);
+                // }
+                // END DEBUG
             }
 
             // Initialize algorithm variables
@@ -114,6 +122,18 @@ namespace mobilityOptimizer
                     int salesmen = p_brk.Length + 1;
                     rng = CalcRange(p_brk, numOfCities, true);
 
+                    // DEBUG Testing for CalcRange
+                    Console.WriteLine("\n >>>>> rng[][]: ");
+                    for (int j = 0; j < rng.Length; j++)
+                    {
+                        for (int k = 0; k < rng[0].Length; k++)
+                        {
+                            Console.Write(" {0} ", rng[j][k]);    
+                        }
+                        Console.WriteLine();
+                    }                    
+                    // END DEBUG
+
                     double[] d = new double[salesmen];
                     double[] Tour;
 
@@ -138,6 +158,14 @@ namespace mobilityOptimizer
                             {
                                 Tour[k] = midTour[k - 1];
                             }
+
+                            int indeces = Tour.Length - 1;
+                            d[j] = CalcTourLength(Tour, dmat, D0, indeces);
+
+                            // DEBUG Test for CalcTourLength
+                            //Console.WriteLine("\n >>>>> d[{0}]: {1}", j, d[j]);
+                            // END DEBUG
+
                         } else {
                             Tour = new double[] {Convert.ToDouble(j), Convert.ToDouble(j)};
                             d[j] = 0;
@@ -318,14 +346,15 @@ namespace mobilityOptimizer
 
         static double[][] CalcRange(double[] p_brk, int n, bool flag) {
             int i;
-            double[][] rng = new double[p_brk.Length][];
+
+            double[][] rng = new double[p_brk.Length + 1][];
             
-            for (i = 0; i < p_brk.Length; i++)
+            for (i = 0; i < rng.Length; i++)
             {
                 rng[i] = new double[2];
             }
 
-            for (i = 0; i < p_brk.Length; i++)
+            for (i = 0; i < rng.Length - 1; i++)
             {
                 if (flag && p_brk[i] > 1) {
                     rng[i][0] = 1;
@@ -347,27 +376,29 @@ namespace mobilityOptimizer
                 }
             }
 
+            i = rng.Length - 1;
+
             if (p_brk[p_brk.Length - 1] < n && p_brk[p_brk.Length - 1] != 1) {
-                rng[i - 1][0] = p_brk[p_brk.Length - 1] + 1;
-                rng[i - 1][1] = n;
+                rng[i][0] = p_brk[p_brk.Length - 1] + 1;
+                rng[i][1] = n;
             } else if (p_brk[p_brk.Length - 1] < n && p_brk[p_brk.Length - 1] == 1) {
-                rng[i - 1][0] = p_brk[p_brk.Length - 1];
-                rng[i - 1][1] = n;
+                rng[i][0] = p_brk[p_brk.Length - 1];
+                rng[i][1] = n;
             } else {
-                rng[i - 1][0] = p_brk[p_brk.Length-1];
-                rng[i - 1][1] = n - 1;
+                rng[i][0] = p_brk[p_brk.Length - 1];
+                rng[i][1] = n - 1;
             }
 
             return rng;
         }
 
         static double[] randbreak(int max_salesmen, int n, int min_tour) {
-            int     num_brks = max_salesmen;
+            int     num_brks = max_salesmen - 1;
             double[] breaks = new double[num_brks];
 
             for (int i = 0; i < num_brks; i++)
             {
-                double newRand = new Random().Next(1, n+1);
+                double newRand = new Random().Next(0, n);
 
                 breaks[i] = newRand;
             }
