@@ -49,7 +49,7 @@ namespace mobilityOptimizer
             //
             ///////////////////////////////////////////
             // TODO: checar que Epsilon este bien
-            double Epsilon = 1*Math.E-10;
+            double Epsilon = 1*Math.Pow(10,-10);
 
             /* Distances to Depots
             Assumes that each salesman is located at a different depot and there are
@@ -71,26 +71,18 @@ namespace mobilityOptimizer
             for(int i = 0; i < pop_size; i++){
                 pop_rte[i] = randperm(numOfCities);
                 pop_brk[i] = randbreak(max_salesmen, numOfCities, min_tour);
-
-                // DEBUG Testing for randbreak()
-                // Console.WriteLine("\n >>>>> pop_brk[i]:");
-                // for (int j = 0; j < pop_brk[0].Length; j++)
-                // {
-                //     Console.Write(" {0} \n", pop_brk[i][j]);
-                // }
-                // END DEBUG
             }
 
             // Initialize algorithm variables
             double global_min = double.PositiveInfinity;
             double[] total_dist = new double[pop_size];
-            double[] dist_history = new double[num_iter];
+            // double[] dist_history = new double[num_iter];
             double[][] tmp_pop_rte = new double[16][];
             double[][] tmp_pop_brk = new double[16][];
             double[][] new_pop_rte = new double[pop_size][];
             double[][] new_pop_brk = new double[pop_size][];
             double[][] rng = new double[max_salesmen][];
-            for(int i = 0; i < 8; i++){
+            for(int i = 0; i < 16; i++){
                 tmp_pop_rte[i] = new double[numOfCities];
                 tmp_pop_brk[i] = new double[1];
             }
@@ -110,6 +102,8 @@ namespace mobilityOptimizer
             //
             ///////////////////////////////////////////
             while(iter2go < num_iter){
+                Console.WriteLine("iter2go: " + iter2go);
+                Console.WriteLine("num_iter: " + num_iter);
                 iter2go = iter2go + 1;
                 iter = iter + 1;
                 double[] p_brk = new double[max_salesmen];
@@ -122,17 +116,17 @@ namespace mobilityOptimizer
                     int salesmen = p_brk.Length + 1;
                     rng = CalcRange(p_brk, numOfCities, true);
 
-                    // DEBUG Testing for CalcRange
-                    Console.WriteLine("\n >>>>> rng[][]: ");
-                    for (int j = 0; j < rng.Length; j++)
-                    {
-                        for (int k = 0; k < rng[0].Length; k++)
-                        {
-                            Console.Write(" {0} ", rng[j][k]);    
-                        }
-                        Console.WriteLine();
-                    }                    
-                    // END DEBUG
+                    // // DEBUG Testing for CalcRange
+                    // Console.WriteLine("\n >>>>> rng[][]: ");
+                    // for (int j = 0; j < rng.Length; j++)
+                    // {
+                    //     for (int k = 0; k < rng[0].Length; k++)
+                    //     {
+                    //         Console.Write(" {0} ", rng[j][k]);    
+                    //     }
+                    //     Console.WriteLine();
+                    // }                    
+                    // // END DEBUG
 
                     double[] d = new double[salesmen];
                     double[] Tour;
@@ -171,12 +165,14 @@ namespace mobilityOptimizer
                             d[j] = 0;
                         }
                     }
+                    total_dist[i] = d.Max() + Epsilon * d.Sum(); // lo maximo que haya en d + Epsillon * sum(d)
                 }
 
                 // Find the Best Route in the Population
+                // Here's where you find the most optimum route in the population
                 int index;
                 double min_dist = total_dist.Min(out index);                
-                dist_history[iter] = min_dist;
+                // dist_history[iter] = min_dist;
                 if(min_dist < global_min){
                     iter2go = 0;
                     int generation = iter;
@@ -286,26 +282,30 @@ namespace mobilityOptimizer
                                 break;
                             case 11: // Remove tasks from agent and add at the end
                                 //  TODO checar falla
-                                l = random.Next(1, max_salesmen-1);
-                                double[] temp = new double[tmp_pop_brk[k].Length]; 
-                                // Aseguramos que l sea positivo
-                                double[] part1 = SubArrayDeepClone(tmp_pop_brk[k], 0, l-1);
-                                double[] part2 = SubArrayDeepClone(tmp_pop_brk[k], l, tmp_pop_brk[k].Length - l);
-                                part1.CopyTo(temp, 0);
-                                part2.CopyTo(temp, part1.Length);
-                                temp[temp.Length - 1] = numOfCities;
-                                tmp_pop_brk[k] = temp;
+                                l = random.Next(0, max_salesmen - 1);
+                                double[] temp = new double[tmp_pop_brk[k].Length];
+                                for(int i = 0; i < l; i++){
+                                    temp[i] = tmp_pop_brk[k][i];
+                                }
+                                for(int i = l+1; i < tmp_pop_brk[k].Length; i++){
+                                    temp[i] = tmp_pop_brk[k][i];
+                                }
+                                temp[tmp_pop_brk[k].Length-1] = numOfCities;
+                                temp.CopyTo(tmp_pop_brk[k]);
+
                                 break;
                             case 12: // Remove tasks from agent and add at the beginning
-                                l = random.Next(1, max_salesmen-1);
-                                temp = new double[tmp_pop_brk[k].Length]; 
-                                // TODO: Checar que si sea 0 y no 1
-                                temp[0] = 0;                                
-                                part1 = SubArrayDeepClone(tmp_pop_brk[k], 0, l-1);
-                                part2 = SubArrayDeepClone(tmp_pop_brk[k], l, tmp_pop_brk[k].Length - l);
-                                part1.CopyTo(temp, 1);
-                                part2.CopyTo(temp, part1.Length);
-                                tmp_pop_brk[k] = temp;
+                                l = random.Next(0, max_salesmen - 1);
+                                temp = new double[tmp_pop_brk[k].Length];
+                                temp[0] = 0;
+                                for(int i = 0, j = 1; i < l; i++, j++){
+                                    temp[j] = tmp_pop_brk[k][i];
+                                }
+                                for(int i = l+1; i < tmp_pop_brk[k].Length; i++){
+                                    temp[i] = tmp_pop_brk[k][i];
+                                }
+                                temp.CopyTo(tmp_pop_brk[k]);
+                                
                                 break;
                             default: // swap close points
                                 if(I < numOfCities){
@@ -330,10 +330,10 @@ namespace mobilityOptimizer
             ///////////////////////////////////////////
             double[][] best_tour = new double[max_salesmen][];
             for(int i = 0; i < max_salesmen; i++){
-                if(rng[i][1] <= rng[i][2]){
+                if(rng[i][0] <= rng[i][1]){
                     double rngStart, rngEnd, diffRng;
-                    rngStart = rng[i][1];
-                    rngEnd = rng[i][2];
+                    rngStart = rng[i][0];
+                    rngEnd = rng[i][1];
                     diffRng = (int)rngEnd - (int)rngStart;
                     double[] rngNumbers = new double[(int)diffRng + 1];
                     for(int j = (int)rngStart, y = 0; j <= rngEnd; j++, y++){
