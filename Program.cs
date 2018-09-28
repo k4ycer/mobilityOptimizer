@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -218,8 +219,8 @@ namespace mobilityOptimizer
 
                     // Generate new solutions
                     for(int k = 0; k < ops; k++){
-                        tmp_pop_rte[k] = best_of_8_rte;
-                        tmp_pop_brk[k] = best_of_8_brk;
+                        tmp_pop_rte[k] = (double[])best_of_8_rte.Clone();
+                        tmp_pop_brk[k] = (double[])best_of_8_brk.Clone();
                         switch(k){                            
                             case 1: // Flip
                                 fliplr(tmp_pop_rte, k, I, J);
