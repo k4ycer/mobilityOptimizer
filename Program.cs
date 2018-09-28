@@ -351,8 +351,14 @@ namespace mobilityOptimizer
                     best_tour[i] = temp;
                 }else{          
                     best_tour[i] = new double[2]{i, i};
+                }                
+            }    
+            for(int y = 0; y < best_tour.Length; y++){
+                for(int x = 0; x < best_tour[y].Length; x++){
+                    Console.Write(best_tour[y][x] + " ");
                 }
-            }                        
+                Console.WriteLine("");
+            }                    
         }
 
         static double CalcTourLength(double[] Tour, double[][] dmat, double[][] d0, int indeces) {            
@@ -413,13 +419,13 @@ namespace mobilityOptimizer
 
             if (p_brk[p_brk.Length - 1] < n && p_brk[p_brk.Length - 1] != 1) {
                 rng[i][0] = p_brk[p_brk.Length - 1] + 1;
-                rng[i][1] = n;
+                rng[i][1] = n - 1;
             } else if (p_brk[p_brk.Length - 1] < n && p_brk[p_brk.Length - 1] == 1) {
                 rng[i][0] = p_brk[p_brk.Length - 1];
-                rng[i][1] = n;
+                rng[i][1] = n - 1;
             } else {
                 rng[i][0] = p_brk[p_brk.Length - 1];
-                rng[i][1] = n - 1;
+                rng[i][1] = n - 2;
             }
 
             return rng;
